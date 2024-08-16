@@ -1,4 +1,3 @@
-# backend/app/main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -25,26 +24,29 @@ class MoleculeResponse(BaseModel):
 
 @app.post("/generate_similar", response_model=list[MoleculeResponse])
 async def generate_similar_structures(request: MoleculeRequest):
-    mol = Chem.MolFromSmiles(request.smiles)
-    if not mol:
-        raise HTTPException(status_code=400, detail="Invalid SMILES")
+    return [MoleculeResponse(smiles="CCO", similarity=0.8),
+            MoleculeResponse(smiles="CCCO", similarity=0.7),
+            MoleculeResponse(smiles="CCCCO", similarity=0.6),]
+    # mol = Chem.MolFromSmiles(request.smiles)
+    # if not mol:
+    #     raise HTTPException(status_code=400, detail="Invalid SMILES")
     
-    similar_mols = []
-    for _ in range(10):  # Generate 10 similar structures
-        new_mol = Chem.MolFromSmiles(Chem.MolToSmiles(mol))
-        new_mol = Chem.AddHs(new_mol)
-        AllChem.MMFFOptimizeMolecule(new_mol, maxIters=50)
-        new_mol = Chem.RemoveHs(new_mol)
-        new_smiles = Chem.MolToSmiles(new_mol)
+    # similar_mols = []
+    # for _ in range(5):  # Generate 5 similar structures
+    #     new_mol = Chem.MolFromSmiles(Chem.MolToSmiles(mol))
+    #     new_mol = Chem.AddHs(new_mol)
+    #     AllChem.MMFFOptimizeMolecule(new_mol, maxIters=50)
+    #     new_mol = Chem.RemoveHs(new_mol)
+    #     new_smiles = Chem.MolToSmiles(new_mol)
         
-        similarity = DataStructs.TanimotoSimilarity(
-            AllChem.GetMorganFingerprintAsBitVect(mol, 2),
-            AllChem.GetMorganFingerprintAsBitVect(new_mol, 2)
-        )
+    #     similarity = DataStructs.TanimotoSimilarity(
+    #         AllChem.GetMorganFingerprintAsBitVect(mol, 2),
+    #         AllChem.GetMorganFingerprintAsBitVect(new_mol, 2)
+    #     )
         
-        similar_mols.append(MoleculeResponse(smiles=new_smiles, similarity=similarity))
+    #     similar_mols.append(MoleculeResponse(smiles=new_smiles, similarity=similarity))
     
-    return similar_mols
+    # return similar_mols
 
 @app.post("/search_commercial", response_model=list[MoleculeResponse])
 async def search_commercial_reagents(request: MoleculeRequest):
@@ -59,24 +61,29 @@ async def search_commercial_reagents(request: MoleculeRequest):
 
 @app.post("/search_pubchem", response_model=list[MoleculeResponse])
 async def search_pubchem(request: MoleculeRequest):
-    pubchem_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/fastsubstructure/smiles/{request.smiles}/cids/JSON"
-    response = requests.get(pubchem_url)
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="PubChem API error")
+    return [MoleculeResponse(smiles="CCO", similarity=0.8),
+            MoleculeResponse(smiles="CCCO", similarity=0.7),
+            MoleculeResponse(smiles="CCCCO", similarity=0.6),]
+    # pubchem_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/fastsubstructure/smiles/{request.smiles}/cids/JSON"
+    # response = requests.get(pubchem_url)
+    # if response.status_code != 200:
+    #     raise HTTPException(status_code=500, detail="PubChem API error")
     
-    data = response.json()
-    cids = data.get('IdentifierList', {}).get('CID', [])[:10]  # Get first 10 CIDs
+    # data = response.json()
+    # cids = data.get('IdentifierList', {}).get('CID', [])[:5]  # Get first 5 CIDs
     
-    results = []
-    for cid in cids:
-        smiles_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/property/CanonicalSMILES/JSON"
-        smiles_response = requests.get(smiles_url)
-        if smiles_response.status_code == 200:
-            smiles_data = smiles_response.json()
-            smiles = smiles_data.get('PropertyTable', {}).get('Properties', [{}])[0].get('CanonicalSMILES', '')
-            if smiles:
-                results.append(MoleculeResponse(smiles=smiles, similarity=0.0))  # We don't calculate similarity here
+    # results = []
+    # for cid in cids:
+    #     smiles_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/property/CanonicalSMILES/JSON"
+    #     smiles_response = requests.get(smiles_url)
+    #     if smiles_response.status_code == 200:
+    #         smiles_data = smiles_response.json()
+    #         smiles = smiles_data.get('PropertyTable', {}).get('Properties', [{}])[0].get('CanonicalSMILES', '')
+    #         if smiles:
+    #             results.append(MoleculeResponse(smiles=smiles, similarity=1.0))  # Similarity is set to 1.0 for exact matches
     
-    return results
+    # return results
 
-# Add more routes as needed
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
